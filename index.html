@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>360 VR Image Viewer</title>
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    <script src="quiz.js"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+        }
+        .control-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .control-btn:hover {
+            background: #45a049;
+        }
+        .control-btn:active {
+            transform: scale(0.95);
+        }
+        .toggle-btn {
+            background: #FF9800;
+        }
+        .toggle-btn:hover {
+            background: #F57C00;
+        }
+
+        /* Reduce brightness of 360 images */
+        a-sky {
+            filter: brightness(0.75) contrast(1.1);
+        }
+
+        /* Quiz Overlay Styles */
+        #quiz-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            overflow-y: auto;
+        }
+
+        #quiz-container {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            border: 2px solid #4CAF50;
+        }
+
+        #quiz-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        #quiz-header h2 {
+            color: #4CAF50;
+            font-size: 28px;
+            margin: 0 0 10px 0;
+        }
+
+        #quiz-header p {
+            color: #ffffff;
+            font-size: 16px;
+            margin: 0;
+        }
+
+        .quiz-question {
+            display: none;
+        }
+
+        .quiz-question.active {
+            display: block;
+        }
+
+        .question-text {
+            color: #ffffff;
+            font-size: 20px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        .quiz-options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .quiz-option {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid #4CAF50;
+            color: #ffffff;
+            padding: 15px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            text-align: left;
+        }
+
+        .quiz-option:hover {
+            background: rgba(76, 175, 80, 0.2);
+            transform: translateX(10px);
+        }
+
+        .quiz-option.selected {
+            background: #4CAF50;
+            border-color: #45a049;
+        }
+
+        .quiz-option.correct {
+            background: #4CAF50;
+            border-color: #2e7d32;
+        }
+
+        .quiz-option.incorrect {
+            background: #f44336;
+            border-color: #c62828;
+        }
+
+        .quiz-nav {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+            gap: 15px;
+        }
+
+        .quiz-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .quiz-btn:hover {
+            background: #45a049;
+            transform: scale(1.05);
+        }
+
+        .quiz-btn:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: scale(1);
+        }
+
+        #quiz-results {
+            display: none;
+            text-align: center;
+        }
+
+        #quiz-results.active {
+            display: block;
+        }
+
+        .result-score {
+            font-size: 48px;
+            color: #4CAF50;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+
+        .result-message {
+            font-size: 20px;
+            color: #ffffff;
+            margin: 15px 0;
+        }
+
+        .result-details {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .result-details p {
+            color: #ffffff;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+
+        .quiz-start-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+
+        .quiz-start-btn:hover {
+            background: #45a049;
+        }
+
+        @media (max-width: 600px) {
+            #quiz-container {
+                padding: 20px;
+            }
+
+            #quiz-header h2 {
+                font-size: 22px;
+            }
+
+            .question-text {
+                font-size: 18px;
+            }
+
+            .quiz-option {
+                padding: 12px 15px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a-scene cursor="rayOrigin: mouse" vr-mode-ui="enabled: true">
+        <a-entity id="camera" camera look-controls="touchEnabled: true; magicWindowTrackingEnabled: true" position="0 1.6 0">
+            <a-cursor color="#4CAF50" raycaster="objects: .nav-pointer" fuse="true" fuse-timeout="1500"></a-cursor>
+        </a-entity>
+
+        <a-assets>
+            <img id="image1" src="1.jpg">
+            <img id="image2" src="2.jpg">
+            <img id="image3" src="3.jpg">
+            <img id="image4" src="4.jpg">
+            <img id="image5" src="5.jpg">
+            <img id="image6" src="6.jpg">
+            <img id="image7" src="7.jpg">
+            <img id="image8" src="8.jpg">
+            <img id="image9" src="9.jpg">
+
+            <!-- Additional Info Images -->
+            <img id="harvesting-machine-img" src="harvesting machine.jpg">
+
+            <!-- Insect Images (Serangga) -->
+            <img id="insect-2" src="serangga/2.png">
+            <img id="insect-3" src="serangga/3.png">
+            <img id="insect-4" src="serangga/4.png">
+            <img id="insect-5" src="serangga/5.png">
+
+            <!-- Slide Images -->
+            <img id="slide-1" src="slide/1.jpg">
+            <img id="slide-2" src="slide/2.jpg">
+            <img id="slide-3" src="slide/3.jpg">
+            <img id="slide-4" src="slide/4.jpg">
+            <img id="slide-5" src="slide/5.jpg">
+            <img id="slide-6" src="slide/6.jpg">
+            <img id="slide-8" src="slide/8.jpg">
+            <img id="slide-9" src="slide/9.jpg">
+            <img id="slide-10" src="slide/10.jpg">
+
+            <!-- Background Music -->
+            <audio id="bgMusic" src="lagu.mp3" preload="auto"></audio>
+            <audio id="quizMusic" src="quiz.mp3" preload="auto"></audio>
+            <audio id="horraySound" src="horray.mp3" preload="auto"></audio>
+            <audio id="goodSound" src="good.mp3" preload="auto"></audio>
+            <audio id="crySound" src="cry.mp3" preload="auto"></audio>
+        </a-assets>
+
+        <a-sky id="sky" src="#image1" rotation="0 -130 0"></a-sky>
+
+        <!-- Background Music Entity -->
+        <a-entity id="music-entity" sound="src: #bgMusic; autoplay: true; loop: true; volume: 0.5"></a-entity>
+
+        <!-- Pointers for Image 1 -->
+        <a-entity id="pointers-img1" visible="true">
+            <!-- Slide Gallery - Horizontal Layout -->
+            <a-entity position="0 1.6 -5" rotation="0 0 0">
+                <!-- Title Card -->
+                <a-plane color="#27AE60" width="7" height="0.35" position="0 1.8 0" opacity="0.95"></a-plane>
+                <a-text value="SELAMAT DATANG KE SAWAH PADI VIRTUAL" align="center" position="0 1.8 0.01" width="7" color="#FFFFFF"></a-text>
+
+                <!-- Slide 1 - Left -->
+                <a-entity position="-3.5 0 0.3" rotation="0 15 0">
+                    <a-plane color="#1a1a2e" width="2.6" height="2.8" opacity="0.95"></a-plane>
+                    <a-plane src="#slide-1" width="2.4" height="2.6" position="0 0 0.01"></a-plane>
+                </a-entity>
+
+                <!-- Slide 2 - Center -->
+                <a-entity position="0 0 0" rotation="0 0 0">
+                    <a-plane color="#1a1a2e" width="2.6" height="2.8" opacity="0.95"></a-plane>
+                    <a-plane src="#slide-2" width="2.4" height="2.6" position="0 0 0.01"></a-plane>
+                </a-entity>
+
+                <!-- Slide 3 - Right -->
+                <a-entity position="3.5 0 0.3" rotation="0 -15 0">
+                    <a-plane color="#1a1a2e" width="2.6" height="2.8" opacity="0.95"></a-plane>
+                    <a-plane src="#slide-3" width="2.4" height="2.6" position="0 0 0.01"></a-plane>
+                </a-entity>
+            </a-entity>
+
+            <a-entity class="nav-pointer checkpoint" position="-0.93 1.53 -2.78" rotation="0 18.5 0" data-target-image="2">
+                <!-- Image Preview Card -->
+                <a-plane color="#000000" width="0.4" height="0.5" opacity="0.9"></a-plane>
+                <a-plane src="#image2" width="0.35" height="0.28" position="0 0.06 0.01"></a-plane>
+                <a-plane color="#1E90FF" width="0.35" height="0.12" position="0 -0.19 0.01"></a-plane>
+                <a-text value="Go to Scene 2" align="center" position="0 -0.19 0.02" width="0.8" color="#FFFFFF"></a-text>
+                <!-- White circle indicator -->
+                <a-circle color="#FFFFFF" radius="0.06" position="0 -0.32 0.02"></a-circle>
+            </a-entity>
+        </a-entity>
+
+        <!-- Pointers for Image 2 -->
+        <a-entity id="pointers-img2" visible="false">
+            <!-- Harvesting Machine Info Card - Optimized -->
+            <a-entity position="-2 1.6 -2.5" rotation="0 15 0">
+                <!-- Image Display -->
+                <a-plane src="#harvesting-machine-img" width="5" height="3" position="0 0 0.01"></a-plane>
+            </a-entity>
+
+            <a-entity class="nav-pointer checkpoint" position="-0.97 1.61 0.23" rotation="0 103 0" data-target-image="3">
+                <!-- Image Preview Card -->
+                <a-plane color="#000000" width="0.25" height="0.32" opacity="0.9"></a-plane>
+                <a-plane src="#image3" width="0.22" height="0.18" position="0 0.038 0.01"></a-plane>
+                <a-plane color="#1E90FF" width="0.22" height="0.075" position="0 -0.123 0.01"></a-plane>
+                <a-text value="Go to Scene 3" align="center" position="0 -0.123 0.02" width="0.5" color="#FFFFFF"></a-text>
+                <!-- White circle indicator -->
+                <a-circle color="#FFFFFF" radius="0.038" position="0 -0.2 0.02"></a-circle>
+            </a-entity>
+        </a-entity>
+
+        <!-- Pointers for Image 3 -->
+        <a-entity id="pointers-img3" visible="false">
+            <!-- 4.jpg Image Display -->
+            <a-entity position="-0.4 0.9 -4.9" rotation="0 -5 0">
+                <a-plane color="#1a1a2e" width="4.2" height="4.4" opacity="0.95"></a-plane>
+                <a-plane src="#slide-4" width="4" height="4.2" position="0 0 0.01"></a-plane>
+            </a-entity>
+
+            <a-entity class="nav-pointer checkpoint" position="4.94 -0.3 0.66" rotation="0 -82 0" data-target-image="4">
+                <!-- Image Preview Card -->
+                <a-plane color="#000000" width="1" height="1.2" opacity="0.9"></a-plane>
+                <a-plane src="#image4" width="0.9" height="0.7" position="0 0.15 0.01"></a-plane>
+                <a-plane color="#1E90FF" width="0.9" height="0.3" position="0 -0.45 0.01"></a-plane>
+                <a-text value="Go to Scene 4" align="center" position="0 -0.45 0.02" width="1.8" color="#FFFFFF"></a-text>
+                <!-- White circle indicator -->
+                <a-circle color="#FFFFFF" radius="0.15" position="0 -0.8 0.02"></a-circle>
+            </a-entity>
+        </a-entity>
+
+        <!-- Pointers for Image 4 -->
+        <a-entity id="pointers-img4" visible="false">
+            <!-- Slide 6 Image Display -->
+            <a-entity position="0 1.6 -5" rotation="0 0 0">
+                <a-plane color="#1a1a2e" width="4.2" height="4.4" opacity="0.95"></a-plane>
+                <a-plane src="#slide-6" width="4" height="4.2" position="0 0 0.01"></a-plane>
+            </a-entity>
+
+            <a-entity class="nav-pointer checkpoint" position="6.68 1.61 -1.93" rotation="0 -74 0" data-target-image="5">
+                <!-- Image Preview Card -->
+                <a-plane color="#000000" width="1" height="1.2" opacity="0.9"></a-plane>
+                <a-plane src="#image5" width="0.9" height="0.7" position="0 0.15 0.01"></a-plane>
+                <a-plane color="#1E90FF" width="0.9" height="0.3" position="0 -0.45 0.01"></a-plane>
+                <a-text value="Go to Scene 5" align="center" position="0 -0.45 0.02" width="1.8" color="#FFFFFF"></a-text>
+                <!-- White circle indicator -->
+                <a-circle color="#FFFFFF" radius="0.15" position="0 -0.8 0.02"></a-circle>
+            </a-entity>
+        </a-entity>
+
+        <!-- Pointers for Image 5 -->
+        <a-entity id="pointers-img5" visible="false">
+            <!-- Insect Gallery - Optimized with more spacing -->
+            <a-entity position="2 1.6 -5" rotation="0 -24.9 0">
+                <!-- Title Card -->
+                <a-plane color="#E74C3C" width="12" height="0.45" position="0 1.8 0" opacity="0.95"></a-plane>
+                <a-text value="SERANGGA PEROSAK (PEST INSECTS)" align="center" position="0 1.8 0.01" width="12" color="#FFFFFF"></a-text>
+
+                <!-- Insect 1 - Far Left -->
+                <a-entity position="-5 0 0.5" rotation="0 30 0">
+                    <a-plane color="#1a1a2e" width="2.4" height="2.6" opacity="0.95"></a-plane>
+                    <a-plane src="#insect-2" width="2.2" height="2.4" position="0 0 0.01"></a-plane>
+                </a-entity>
+
+                <!-- Insect 2 - Center Left -->
+                <a-entity position="-1.7 0 0.2" rotation="0 12 0">
+                    <a-plane color="#1a1a2e" width="2.4" height="2.6" opacity="0.95"></a-plane>
+                    <a-plane src="#insect-3" width="2.2" height="2.4" position="0 0 0.01"></a-plane>
+                </a-entity>
+
+                <!-- Insect 3 - Center Right -->
+                <a-entity position="1.7 0 0.2" rotation="0 -12 0">
+                    <a-plane color="#1a1a2e" width="2.4" height="2.6" opacity="0.95"></a-plane>
+                    <a-plane src="#insect-4" width="2.2" height="2.4" position="0 0 0.01"></a-plane>
+                </a-entity>
+
+                <!-- Insect 4 - Far Right -->
+                <a-entity position="5 0 0.5" rotation="0 -30 0">
+                    <a-plane color="#1a1a2e" width="2.4" height="2.6" opacity="0.95"></a-plane>
+                    <a-plane src="#insect-5" width="2.2" height="2.4" position="0 0 0.01"></a-plane>
+                </a-entity>
+            </a-entity>
+
+            <a-entity class="nav-pointer checkpoint" position="0 -0.5 -4" rotation="0 0 0" data-target-image="6">
+                <!-- Image Preview Card -->
+                <a-plane color="#000000" width="1" height="1.2" opacity="0.9"></a-plane>
+                <a-plane src="#image6" width="0.9" height="0.7" position="0 0.15 0.01"></a-plane>
+                <a-plane color="#1E90FF" width="0.9" height="0.3" position="0 -0.45 0.01"></a-plane>
+                <a-text value="Go to Scene 6" align="center" position="0 -0.45 0.02" width="1.8" color="#FFFFFF"></a-text>
+                <!-- White circle indicator -->
+                <a-circle color="#FFFFFF" radius="0.15" position="0 -0.8 0.02"></a-circle>
+            </a-entity>
+        </a-entity>
+
+        <!-- Pointers for Image 6 -->
+        <a-entity id="pointers-img6" visible="false">
+            <!-- Slide 8 Image Display -->
+            <a-entity position="0 1.6 -5" rotation="0 0 0">
+                <a-plane color="#1a1a2e" width="4.2" height="4.4" opacity="0.95"></a-plane>
+                <a-plane src="#slide-8" width="4" height="4.2" position="0 0 0.01"></a-plane>
+            </a-entity>
+
+            <a-entity class="nav-pointer checkpoint" position="4.89 -0.18 1.02" rotation="0 -78 0" data-target-image="7">
+                <!-- Image Preview Card -->
+                <a-plane color="#000000" width="1" height="1.2" opacity="0.9"></a-plane>
+                <a-plane src="#image7" width="0.9" height="0.7" position="0 0.15 0.01"></a-plane>
+                <a-plane color="#1E90FF" width="0.9" height="0.3" position="0 -0.45 0.01"></a-plane>
+                <a-text value="Go to Scene 7" align="center" position="0 -0.45 0.02" width="1.8" color="#FFFFFF"></a-text>
+                <!-- White circle indicator -->
+                <a-circle color="#FFFFFF" radius="0.15" position="0 -0.8 0.02"></a-circle>
+            </a-entity>
+        </a-entity>
+
+        <!-- Pointers for Image 7 -->
+        <a-entity id="pointers-img7" visible="false">
+            <!-- Slide 9 Image Display -->
+            <a-entity position="0 1.6 -5" rotation="0 0 0">
+                <a-plane color="#1a1a2e" width="4.2" height="4.4" opacity="0.95"></a-plane>
+                <a-plane src="#slide-9" width="4" height="4.2" position="0 0 0.01"></a-plane>
+            </a-entity>
+
+            <a-entity class="nav-pointer checkpoint" position="1.22 0.04 4.84" rotation="0 -166 0" data-target-image="8">
+                <!-- Image Preview Card -->
+                <a-plane color="#000000" width="1" height="1.2" opacity="0.9"></a-plane>
+                <a-plane src="#image8" width="0.9" height="0.7" position="0 0.15 0.01"></a-plane>
+                <a-plane color="#1E90FF" width="0.9" height="0.3" position="0 -0.45 0.01"></a-plane>
+                <a-text value="Go to Scene 8" align="center" position="0 -0.45 0.02" width="1.8" color="#FFFFFF"></a-text>
+                <!-- White circle indicator -->
+                <a-circle color="#FFFFFF" radius="0.15" position="0 -0.8 0.02"></a-circle>
+            </a-entity>
+        </a-entity>
+
+        <!-- Pointers for Image 8 -->
+        <a-entity id="pointers-img8" visible="false">
+            <!-- Slide 5 Image Display -->
+            <a-entity position="0 1.6 -5" rotation="0 0 0">
+                <a-plane color="#1a1a2e" width="4.2" height="4.4" opacity="0.95"></a-plane>
+                <a-plane src="#slide-5" width="4" height="4.2" position="0 0 0.01"></a-plane>
+            </a-entity>
+
+            <a-entity class="nav-pointer checkpoint" position="1.79 0.03 4.66" rotation="0 -159 0" data-target-image="9">
+                <!-- Image Preview Card -->
+                <a-plane color="#000000" width="1" height="1.2" opacity="0.9"></a-plane>
+                <a-plane src="#image9" width="0.9" height="0.7" position="0 0.15 0.01"></a-plane>
+                <a-plane color="#1E90FF" width="0.9" height="0.3" position="0 -0.45 0.01"></a-plane>
+                <a-text value="Go to Scene 9" align="center" position="0 -0.45 0.02" width="1.8" color="#FFFFFF"></a-text>
+                <!-- White circle indicator -->
+                <a-circle color="#FFFFFF" radius="0.15" position="0 -0.8 0.02"></a-circle>
+            </a-entity>
+        </a-entity>
+
+        <!-- Pointers for Image 9 -->
+        <a-entity id="pointers-img9" visible="false">
+            <!-- Slide 10 Image Display -->
+            <a-entity position="0 1.6 -5" rotation="0 0 0">
+                <a-plane color="#1a1a2e" width="3.2" height="3.4" opacity="0.95"></a-plane>
+                <a-plane src="#slide-10" width="3" height="3.2" position="0 0 0.01"></a-plane>
+            </a-entity>
+
+            <!-- Quiz Button -->
+            <a-entity id="quiz-button" class="nav-pointer" position="0 -0.5 -4" rotation="0 0 0">
+                <a-plane color="#FF9800" width="1.5" height="0.5" opacity="0.95"></a-plane>
+                <a-text value="JAWAB QUIZ" align="center" position="0 0 0.01" width="3" color="#FFFFFF"></a-text>
+                <a-circle color="#FFEB3B" radius="0.1" position="-0.6 0 0.01"></a-circle>
+                <a-circle color="#FFEB3B" radius="0.1" position="0.6 0 0.01"></a-circle>
+            </a-entity>
+        </a-entity>
+    </a-scene>
+
+
+    <div id="controls">
+        <button class="control-btn" onclick="goBack()" style="background: #FF6B6B;">← Back</button>
+        <button class="control-btn" onclick="zoomIn()">Zoom In (+)</button>
+        <button class="control-btn" onclick="zoomOut()">Zoom Out (-)</button>
+        <button class="control-btn" onclick="resetZoom()">Reset Zoom</button>
+        <button class="control-btn toggle-btn" id="music-toggle" onclick="toggleMusic()" style="display: none;">🔊 Music: ON</button>
+    </div>
+
+    <!-- Quiz Overlay -->
+    <div id="quiz-overlay">
+        <div id="quiz-container">
+            <div id="quiz-header">
+                <h2>Kuiz Lawatan Ladang Padi</h2>
+                <p>Uji pengetahuan anda tentang apa yang telah anda pelajari!</p>
+            </div>
+
+            <div id="quiz-content">
+                <!-- Questions will be rendered dynamically by quiz.js -->
+            </div>
+
+            <div id="quiz-results">
+                <h2 style="color: #4CAF50;">Kuiz Selesai!</h2>
+                <div class="result-score" id="result-score">0/6</div>
+                <div class="result-message" id="result-message">Tahniah!</div>
+                <div class="result-details">
+                    <p><strong>Jawapan Betul:</strong> <span id="correct-count">0</span></p>
+                    <p><strong>Jawapan Salah:</strong> <span id="wrong-count">0</span></p>
+                    <p><strong>Peratusan:</strong> <span id="percentage">0%</span></p>
+                </div>
+                <button class="quiz-start-btn" onclick="retakeQuiz()">Cuba Lagi</button>
+                <button class="quiz-start-btn" onclick="closeQuiz()" style="background: #FF6B6B;">Tutup</button>
+            </div>
+
+            <div class="quiz-nav" id="quiz-nav">
+                <button class="quiz-btn" id="prev-btn" onclick="previousQuestion()" disabled>Sebelum</button>
+                <button class="quiz-btn" id="next-btn" onclick="nextQuestion()" disabled>Seterusnya</button>
+                <button class="quiz-btn" id="submit-btn" onclick="submitQuiz()" style="display: none;">Hantar Kuiz</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentImageIndex = 1;
+        const totalImages = 9;
+        let currentZoom = 55;
+        let isMusicPlaying = true;
+        let musicEntity = null;
+
+
+        // Zoom functions
+        function zoomIn() {
+            if (currentZoom > 20) {
+                currentZoom -= 5;
+                updateZoom();
+            }
+        }
+
+        function zoomOut() {
+            if (currentZoom < 90) {
+                currentZoom += 5;
+                updateZoom();
+            }
+        }
+
+        function resetZoom() {
+            currentZoom = 55;
+            updateZoom();
+        }
+
+        function updateZoom() {
+            const camera = document.querySelector('#camera');
+            camera.setAttribute('camera', 'fov', currentZoom);
+        }
+
+        // Navigation functions
+        function goToImage(imageNumber) {
+            currentImageIndex = imageNumber;
+            updateImage();
+        }
+
+        function goBack() {
+            if (currentImageIndex > 1) {
+                currentImageIndex--;
+                updateImage();
+            }
+        }
+
+        function updateImage() {
+            const sky = document.querySelector('#sky');
+            sky.setAttribute('src', `#image${currentImageIndex}`);
+
+            // Show/hide appropriate pointers
+            for (let i = 1; i <= totalImages; i++) {
+                const pointerGroup = document.querySelector(`#pointers-img${i}`);
+                if (pointerGroup) {
+                    pointerGroup.setAttribute('visible', i === currentImageIndex);
+                }
+            }
+
+        }
+
+        // Scene and camera references
+        const scene = document.querySelector('a-scene');
+        const camera = document.querySelector('#camera');
+
+        // Music control functions
+        function toggleMusic() {
+            if (!musicEntity) return;
+
+            if (isMusicPlaying) {
+                musicEntity.components.sound.pauseSound();
+                document.getElementById('music-toggle').innerHTML = '🔇 Music: OFF';
+                isMusicPlaying = false;
+            } else {
+                musicEntity.components.sound.playSound();
+                document.getElementById('music-toggle').innerHTML = '🔊 Music: ON';
+                isMusicPlaying = true;
+            }
+        }
+
+        // Click events for all navigation pointers
+        scene.addEventListener('loaded', () => {
+            const navPointers = document.querySelectorAll('.nav-pointer');
+            navPointers.forEach(pointer => {
+                pointer.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const targetImage = parseInt(pointer.getAttribute('data-target-image'));
+                    goToImage(targetImage);
+                });
+            });
+
+            // Initialize music entity reference and show music control
+            musicEntity = document.getElementById('music-entity');
+            if (musicEntity) {
+                document.getElementById('music-toggle').style.display = 'block';
+
+                // Ensure music plays on scene load
+                musicEntity.addEventListener('sound-loaded', function() {
+                    if (musicEntity.components.sound) {
+                        musicEntity.components.sound.playSound();
+                        isMusicPlaying = true;
+                    }
+                });
+
+                // Fallback: try to play after a short delay
+                setTimeout(() => {
+                    if (musicEntity.components.sound && !isMusicPlaying) {
+                        try {
+                            musicEntity.components.sound.playSound();
+                            isMusicPlaying = true;
+                        } catch (e) {
+                            console.log('Autoplay blocked. Click music button to play.');
+                        }
+                    }
+                }, 1500);
+            }
+
+            // Card panel disabled for performance
+        });
+
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+            if (e.key === '+' || e.key === '=') zoomIn();
+            if (e.key === '-' || e.key === '_') zoomOut();
+            if (e.key === '0') resetZoom();
+            if (e.key === 'm' || e.key === 'M') toggleMusic(); // Toggle music with 'M' key
+            // Number keys to jump to images
+            if (e.key >= '1' && e.key <= '9') {
+                goToImage(parseInt(e.key));
+            }
+        });
+
+        // Mobile touch controls - Pinch to Zoom
+        let initialDistance = 0;
+        let initialZoom = currentZoom;
+
+        document.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 2) {
+                // Store initial distance between two fingers
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                initialDistance = Math.sqrt(dx * dx + dy * dy);
+                initialZoom = currentZoom;
+            }
+        });
+
+        document.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 2) {
+                e.preventDefault();
+
+                // Calculate current distance between two fingers
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                const currentDistance = Math.sqrt(dx * dx + dy * dy);
+
+                // Calculate zoom change
+                const distanceChange = initialDistance - currentDistance;
+                const zoomChange = distanceChange * 0.1;
+
+                // Update zoom
+                currentZoom = Math.max(20, Math.min(90, initialZoom + zoomChange));
+                updateZoom();
+            }
+        }, { passive: false });
+
+        // Request device orientation permission for iOS 13+
+        if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+            // Create a button to request permission
+            const permissionButton = document.createElement('button');
+            permissionButton.textContent = 'Enable Gyroscope';
+            permissionButton.className = 'control-btn';
+            permissionButton.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10000; padding: 20px 40px; font-size: 18px;';
+
+            permissionButton.addEventListener('click', () => {
+                DeviceOrientationEvent.requestPermission()
+                    .then(response => {
+                        if (response === 'granted') {
+                            permissionButton.remove();
+                        }
+                    })
+                    .catch(console.error);
+            });
+
+            document.body.appendChild(permissionButton);
+        }
+    </script>
+</body>
+</html>
