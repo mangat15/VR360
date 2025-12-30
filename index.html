@@ -517,11 +517,11 @@
 
 
     <div id="controls">
-        <button class="control-btn" onclick="goBack()" style="background: #FF6B6B;">← Asal</button>
-        <button class="control-btn" onclick="zoomIn()">Zum (+)</button>
-        <button class="control-btn" onclick="zoomOut()">Zum (-)</button>
-        <button class="control-btn" onclick="resetZoom()">Set Semula</button>
-        <button class="control-btn toggle-btn" id="music-toggle" onclick="toggleMusic()" style="display: none;">🔊 Muzik</button>
+        <button class="control-btn" onclick="goBack()" style="background: #FF6B6B;">← Back</button>
+        <button class="control-btn" onclick="zoomIn()">Zoom In (+)</button>
+        <button class="control-btn" onclick="zoomOut()">Zoom Out (-)</button>
+        <button class="control-btn" onclick="resetZoom()">Reset Zoom</button>
+        <button class="control-btn toggle-btn" id="music-toggle" onclick="toggleMusic()" style="display: none;">🔊 Music</button>
     </div>
 
     <!-- Quiz Overlay -->
@@ -626,11 +626,11 @@
 
             if (isMusicPlaying) {
                 musicEntity.components.sound.pauseSound();
-                document.getElementById('music-toggle').innerHTML = '🔇 Muzik';
+                document.getElementById('music-toggle').innerHTML = '🔇 Music';
                 isMusicPlaying = false;
             } else {
                 musicEntity.components.sound.playSound();
-                document.getElementById('music-toggle').innerHTML = '🔊 Muzik';
+                document.getElementById('music-toggle').innerHTML = '🔊 Music';
                 isMusicPlaying = true;
             }
         }
