@@ -18,10 +18,13 @@
             transform: translateX(-50%);
             z-index: 1000;
             display: flex;
+            flex-wrap: wrap;
             gap: 10px;
             background: rgba(0, 0, 0, 0.7);
             padding: 15px;
             border-radius: 10px;
+            max-width: 95%;
+            justify-content: center;
         }
         .control-btn {
             background: #4CAF50;
@@ -32,6 +35,7 @@
             cursor: pointer;
             font-size: 16px;
             font-weight: bold;
+            white-space: nowrap;
         }
         .control-btn:hover {
             background: #45a049;
@@ -722,7 +726,17 @@
             const permissionButton = document.createElement('button');
             permissionButton.textContent = 'Enable Gyroscope';
             permissionButton.className = 'control-btn';
-            permissionButton.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10000; padding: 20px 40px; font-size: 18px;';
+            permissionButton.style.cssText = 'position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%); z-index: 10000; padding: 15px 30px; font-size: 16px; background: #FF9800; animation: pulse 2s infinite;';
+
+            // Add pulse animation
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes pulse {
+                    0%, 100% { transform: translateX(-50%) scale(1); }
+                    50% { transform: translateX(-50%) scale(1.05); }
+                }
+            `;
+            document.head.appendChild(style);
 
             permissionButton.addEventListener('click', () => {
                 DeviceOrientationEvent.requestPermission()
