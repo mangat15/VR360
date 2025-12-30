@@ -517,11 +517,11 @@
 
 
     <div id="controls">
-        <button class="control-btn" onclick="goBack()" style="background: #FF6B6B;">← Back</button>
-        <button class="control-btn" onclick="zoomIn()">Zoom In (+)</button>
-        <button class="control-btn" onclick="zoomOut()">Zoom Out (-)</button>
-        <button class="control-btn" onclick="resetZoom()">Reset Zoom</button>
-        <button class="control-btn toggle-btn" id="music-toggle" onclick="toggleMusic()" style="display: none;">🔊 Music: ON</button>
+        <button class="control-btn" onclick="goBack()" style="background: #FF6B6B;">← Asal</button>
+        <button class="control-btn" onclick="zoomIn()">Zum (+)</button>
+        <button class="control-btn" onclick="zoomOut()">Zum (-)</button>
+        <button class="control-btn" onclick="resetZoom()">Set Semula</button>
+        <button class="control-btn toggle-btn" id="music-toggle" onclick="toggleMusic()" style="display: none;">🔊 Muzik</button>
     </div>
 
     <!-- Quiz Overlay -->
@@ -626,11 +626,11 @@
 
             if (isMusicPlaying) {
                 musicEntity.components.sound.pauseSound();
-                document.getElementById('music-toggle').innerHTML = '🔇 Music: OFF';
+                document.getElementById('music-toggle').innerHTML = '🔇 Muzik';
                 isMusicPlaying = false;
             } else {
                 musicEntity.components.sound.playSound();
-                document.getElementById('music-toggle').innerHTML = '🔊 Music: ON';
+                document.getElementById('music-toggle').innerHTML = '🔊 Muzik';
                 isMusicPlaying = true;
             }
         }
@@ -720,35 +720,21 @@
             }
         }, { passive: false });
 
-        // Request device orientation permission for iOS 13+
+        // Auto-request device orientation permission for iOS 13+ (silently)
         if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-            // Create a button to request permission
-            const permissionButton = document.createElement('button');
-            permissionButton.textContent = 'Enable Gyroscope';
-            permissionButton.className = 'control-btn';
-            permissionButton.style.cssText = 'position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%); z-index: 10000; padding: 15px 30px; font-size: 16px; background: #FF9800; animation: pulse 2s infinite;';
-
-            // Add pulse animation
-            const style = document.createElement('style');
-            style.textContent = `
-                @keyframes pulse {
-                    0%, 100% { transform: translateX(-50%) scale(1); }
-                    50% { transform: translateX(-50%) scale(1.05); }
-                }
-            `;
-            document.head.appendChild(style);
-
-            permissionButton.addEventListener('click', () => {
+            // Auto-request on first user interaction
+            document.addEventListener('click', function requestPermission() {
                 DeviceOrientationEvent.requestPermission()
                     .then(response => {
                         if (response === 'granted') {
-                            permissionButton.remove();
+                            document.removeEventListener('click', requestPermission);
                         }
                     })
-                    .catch(console.error);
-            });
-
-            document.body.appendChild(permissionButton);
+                    .catch(() => {
+                        // Silently fail if user denies
+                        document.removeEventListener('click', requestPermission);
+                    });
+            }, { once: true });
         }
     </script>
 </body>
