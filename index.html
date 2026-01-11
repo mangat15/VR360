@@ -19,21 +19,21 @@
             z-index: 1000;
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 8px;
             background: rgba(0, 0, 0, 0.7);
-            padding: 15px;
+            padding: 12px;
             border-radius: 10px;
-            max-width: 95%;
+            max-width: 98%;
             justify-content: center;
         }
         .control-btn {
             background: #4CAF50;
             color: white;
             border: none;
-            padding: 10px 20px;
+            padding: 10px 15px;
             border-radius: 5px;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 14px;
             font-weight: bold;
             white-space: nowrap;
         }
@@ -518,11 +518,10 @@
 
     <div id="controls">
         <button class="control-btn" onclick="goBack()" style="background: #FF6B6B;">← Back</button>
-        <button class="control-btn" onclick="zoomIn()">Zoom In (+)</button>
-        <button class="control-btn" onclick="zoomOut()">Zoom Out (-)</button>
         <button class="control-btn" onclick="resetZoom()">Reset Zoom</button>
         <button class="control-btn" onclick="toggleFullscreen()" style="background: #9C27B0;">⛶ Fullscreen</button>
         <button class="control-btn toggle-btn" id="music-toggle" onclick="toggleMusic()" style="display: none;">🔊 Music</button>
+        <button class="control-btn" id="gyro-btn" onclick="enableGyroscope()" style="display: none; background: #FF9800;">📱 Enable Gyro</button>
     </div>
 
     <!-- Quiz Overlay -->
@@ -757,6 +756,11 @@
                     .then(response => {
                         if (response === 'granted') {
                             console.log('iOS gyroscope enabled');
+                            // Hide the gyro button after permission granted
+                            const gyroBtn = document.getElementById('gyro-btn');
+                            if (gyroBtn) {
+                                gyroBtn.style.display = 'none';
+                            }
                             // Enable look-controls for iOS
                             const camera = document.querySelector('#camera');
                             if (camera) {
@@ -770,6 +774,7 @@
                     })
                     .catch(error => {
                         console.log('Gyroscope permission denied:', error);
+                        alert('Please allow motion & orientation access to use gyroscope');
                     });
             } else {
                 // For Android and other platforms - should work automatically
@@ -777,24 +782,14 @@
             }
         }
 
-        // Auto-request on first user interaction
-        let gyroRequested = false;
-        document.addEventListener('touchstart', function requestGyro() {
-            if (!gyroRequested) {
-                gyroRequested = true;
-                enableGyroscope();
-                document.removeEventListener('touchstart', requestGyro);
+        // Show gyro button only for iOS devices
+        if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+            // This is an iOS 13+ device
+            const gyroBtn = document.getElementById('gyro-btn');
+            if (gyroBtn) {
+                gyroBtn.style.display = 'inline-block';
             }
-        }, { once: true });
-
-        // Also try on first click (for desktop testing)
-        document.addEventListener('click', function requestGyro() {
-            if (!gyroRequested) {
-                gyroRequested = true;
-                enableGyroscope();
-                document.removeEventListener('click', requestGyro);
-            }
-        }, { once: true });
+        }
     </script>
 </body>
 </html>
