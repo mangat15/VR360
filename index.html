@@ -720,22 +720,52 @@
             }
         }, { passive: false });
 
-        // Auto-request device orientation permission for iOS 13+ (silently)
-        if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-            // Auto-request on first user interaction
-            document.addEventListener('click', function requestPermission() {
+        // Enable gyroscope for both iOS and Android
+        function enableGyroscope() {
+            // For iOS 13+ - requires permission
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 DeviceOrientationEvent.requestPermission()
                     .then(response => {
                         if (response === 'granted') {
-                            document.removeEventListener('click', requestPermission);
+                            console.log('iOS gyroscope enabled');
+                            // Enable look-controls for iOS
+                            const camera = document.querySelector('#camera');
+                            if (camera) {
+                                camera.setAttribute('look-controls', {
+                                    touchEnabled: true,
+                                    magicWindowTrackingEnabled: true,
+                                    pointerLockEnabled: false
+                                });
+                            }
                         }
                     })
-                    .catch(() => {
-                        // Silently fail if user denies
-                        document.removeEventListener('click', requestPermission);
+                    .catch(error => {
+                        console.log('Gyroscope permission denied:', error);
                     });
-            }, { once: true });
+            } else {
+                // For Android and other platforms - should work automatically
+                console.log('Gyroscope enabled (Android/other)');
+            }
         }
+
+        // Auto-request on first user interaction
+        let gyroRequested = false;
+        document.addEventListener('touchstart', function requestGyro() {
+            if (!gyroRequested) {
+                gyroRequested = true;
+                enableGyroscope();
+                document.removeEventListener('touchstart', requestGyro);
+            }
+        }, { once: true });
+
+        // Also try on first click (for desktop testing)
+        document.addEventListener('click', function requestGyro() {
+            if (!gyroRequested) {
+                gyroRequested = true;
+                enableGyroscope();
+                document.removeEventListener('click', requestGyro);
+            }
+        }, { once: true });
     </script>
 </body>
 </html>
