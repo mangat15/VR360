@@ -521,6 +521,7 @@
         <button class="control-btn" onclick="zoomIn()">Zoom In (+)</button>
         <button class="control-btn" onclick="zoomOut()">Zoom Out (-)</button>
         <button class="control-btn" onclick="resetZoom()">Reset Zoom</button>
+        <button class="control-btn" onclick="toggleFullscreen()" style="background: #9C27B0;">⛶ Fullscreen</button>
         <button class="control-btn toggle-btn" id="music-toggle" onclick="toggleMusic()" style="display: none;">🔊 Music</button>
     </div>
 
@@ -619,6 +620,34 @@
         // Scene and camera references
         const scene = document.querySelector('a-scene');
         const camera = document.querySelector('#camera');
+
+        // Fullscreen control function
+        function toggleFullscreen() {
+            if (!document.fullscreenElement && !document.webkitFullscreenElement && !document.mozFullScreenElement) {
+                // Enter fullscreen
+                const elem = document.documentElement;
+                if (elem.requestFullscreen) {
+                    elem.requestFullscreen();
+                } else if (elem.webkitRequestFullscreen) { // Safari
+                    elem.webkitRequestFullscreen();
+                } else if (elem.mozRequestFullScreen) { // Firefox
+                    elem.mozRequestFullScreen();
+                } else if (elem.msRequestFullscreen) { // IE/Edge
+                    elem.msRequestFullscreen();
+                }
+            } else {
+                // Exit fullscreen
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) { // Safari
+                    document.webkitExitFullscreen();
+                } else if (document.mozCancelFullScreen) { // Firefox
+                    document.mozCancelFullScreen();
+                } else if (document.msExitFullscreen) { // IE/Edge
+                    document.msExitFullscreen();
+                }
+            }
+        }
 
         // Music control functions
         function toggleMusic() {
